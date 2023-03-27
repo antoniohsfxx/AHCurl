@@ -1,0 +1,262 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//Dtd XHTML 1.0 transitional//EN" "http://www.w3.org/tr/xhtml1/Dtd/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="pt-br">
+<head id="Head1"><title>
+	Prefeitura do Município de São Paulo
+</title><meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" /><meta http-equiv="X-UA-Compatible" content="IE=9; IE=10" /><meta name="robots" content="follow" /><meta http-equiv="content-language" content="pt-br" /><meta name="copyright" content="© Prefeitura da Cidade de São Paulo e PRODAM" /><meta name="description" content="insira aqui texto de resumo descritivo " /><meta name="keywords" content="insira aqui as palavras-chave do documento" /><meta name="rating" content="general" /><meta name="DC.publisher" content="Prefeitura da Cidade de São Paulo e PRODAM" /><meta http-equiv="Pragma" content="no-cache" /><meta http-equiv="Expires" content="-1" /><link href='../css/TP.css' rel='stylesheet' type='text/css' media='screen' /><link href='../css/jquery.alerts.css' rel='stylesheet' type='text/css' media='screen' /><script language='JavaScript' src='//misc.prefeitura.sp.gov.br/js/configuration.js' type='text/javascript'></script><link href="../css/ajaxmodal.css" rel="stylesheet" type="text/css" /><link href="../css/menu2.css" rel="stylesheet" type="text/css" /><link href="../css/tp.css" rel="stylesheet" type="text/css" /><link href="../css/jquery-ui.css" rel="stylesheet" type="text/css" /><link href="../css/jquery.ui.core.css" rel="stylesheet" type="text/css" /><link href="../css/jquery.ui.datepicker.css" rel="stylesheet" type="text/css" /><link href="../css/jquery.ui.theme.css" rel="stylesheet" type="text/css" /><link href="../css/estilos.css" rel="stylesheet" type="text/css" /><link href="../css/padrao.css" rel="stylesheet" type="text/css" /><link href="../css/themes/hot-sneaks/jquery-ui-1.8.23.custom.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" language="JavaScript">
+        PortalConfiguration.setTitle('Secretaria de <em>Finanças</em> - Agendamento Eletrônico');
+        PortalConfiguration.setMenu('claro');
+        PortalConfiguration.setColor('default');
+        PortalConfiguration.hideTitle();
+        PortalConfiguration.hideTrackBack();
+        PortalConfiguration.hideSearch();
+    </script>
+    <script language='JavaScript' src='//misc.prefeitura.sp.gov.br/js/structure.js' type='text/javascript'></script>
+    <style type="text/css">
+        #body
+        {
+            background: #FFFFFF;
+        }
+    </style>
+    <script src="/aspnet_client/generico/2_0_0_0/jquery.js" type="text/javascript"></script>
+    <script src="../js/jquery-1.7.1.min.js" type="text/javascript"></script>
+    <script src="../js/jModalWindow.js?versao=1.1.0.20951 23/01/2023 20:07:09" type="text/javascript"></script>
+    <script src="../js/jquery.meio.mask.js" type="text/javascript"></script>
+    <script src="../js/utils.js?versao=1.1.0.20951 23/01/2023 20:07:09" type="text/javascript"></script>
+    <script src="../js/jquery-ui-1.8.23.custom.min.js" type="text/javascript"></script>
+    <script src="../js/jquery.ui.datepicker-pt-BR.js" type="text/javascript"></script>
+    <script src="../js/jquery.ui.datepicker.js" type="text/javascript"></script>
+    <script src="../js/jquery-ui-timepicker-addon.js" type="text/javascript"></script>
+    <script type="text/javascript" language="JavaScript">
+<!--        //
+        PortalStructure.printHeader(); // Insere o Header na pagina
+        //-->
+
+        $(document).ready(
+        function () {
+            $("#btnSWLogin").click(btnSWLogin_click);
+        });
+
+        function btnSWLogin_click() {
+            cpf = $("#txtCPFLogin").val().replace('.', '').replace('-', '');
+            senha = $("#txtSenhaLogin").val();
+
+            if (cpf == "") {
+                alert("Digite um CPF.");
+                return false;
+            }
+
+            if (senha == "") {
+                alert("Digite uma senha.");
+                return false;
+            }
+
+            if (!ValidarCPF(cpf)) {
+                alert("CPF inválido.");
+                return false;
+            }
+
+            return true;
+        }
+
+        function loginSenhaWeb(cpf, senha) {
+            $.ajax({
+                type: "POST",
+                url: "AgendarP1.aspx/LoginSenhaWEB",
+                async: true,
+                contentType: "application/json; charset=utf-8",
+                data: "{cpf: '" + cpf + "', senha: '" + senha + "', captcha: '" + $('#txtValidacaoSW').val() + "'}",
+                dataType: "json",
+                success: function (msg) {
+                    if (msg.d.Logado == true) {
+                        $("#divSenhaWeb").hide();
+                        $("#hiddenSenhaWeb").val('false');
+                        AlterarEnableDosCamposEnderecoContado(true);
+                        $("#txtDataNasc").removeAttr("disabled");
+                        if (msg.d.Contribuinte != '') {
+                            $("#txtCPFCad").val(msg.d.Contribuinte.Cpf);
+                            $('[id$="hdnDataNascimento"]').val(msg.d.Contribuinte.DtNascimento);
+                            $("#txtDataNasc").focus();
+                        }
+                    } else {
+                        $("#acesso").show();
+                        AlterarEnableDosCamposEnderecoContado(false);
+                        $("#txtDataNasc").attr("disabled", "true");
+                        $("#txtDataNasc").val('');
+                        $("#txtNome").val('');
+                        $("#txtCep").val('');
+                        $("#txtLogradouro").val('');
+                        $("#txtNumero").val('');
+                        $("#txtComplemento").val('');
+                        $("#txtBairro").val('');
+                        $("#txtCidade").val('');
+                        $("#txtUF").val('');
+                        $("#txtEmail").val('');
+                        $("#txtCPFCad").val('');
+                        $('[id$="hdnDataNascimento"]').val('');
+                        alert(msg.d.msg);
+                    }
+                },
+                error: function () {
+                }
+            });
+        }
+
+        function TocarAudioSW() {
+            //Verifica se o navegador dá suporte a HTML5
+            var suportaHTML5 = document.createElement('audio').canPlayType;
+            //Obtendo o tipo de som gerado
+            var tipoSom = $('[id$="__tpAudio"]').val();
+            var strAudio = new String();
+            var randomnumber = Math.floor(Math.random() * 1111)
+            strAudio = "";
+            if (suportaHTML5) {
+                strAudio += '<audio controls="controls" autoPlay="autoPlay" style="display:none">';
+                strAudio += '<source src="pgAudio.ashx?' + randomnumber + '" type="audio/' + tipoSom + '"> />';
+                strAudio += '</audio>';
+            } else {
+                strAudio += "<object classid='clsid:D27CDB6E-AE6D-11cf-96B8-444553540000' width='0' height='0' ";
+                strAudio += "codebase='http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab'>";
+                strAudio += "<param name='movie' value='singlemp3player.swf?showDownload=false&file=pgAudio.ashx?" + randomnumber + "&autoStart=true&backColor=000000&frontColor=00ff00&repeatPlay=no&songVolume=50'>";
+                strAudio += "<param name='wmode' value='transparent'>";
+                strAudio += "<embed wmode='transparent' width='25' height='20' src='singlemp3player.swf?showDownload=false&file=pgAudio.ashx?" + randomnumber + "&autoStart=true&backColor=000000&frontColor=00ff00&repeatPlay=no&songVolume=50' ";
+                strAudio += "type='application/x-shockwave-flash' pluginspage='http://www.macromedia.com/go/getflashplayer'>";
+                strAudio += "</object>"
+            }
+
+            var objDivP = document.getElementById('divSomSW');
+            objDivP.innerHTML = strAudio;
+        }
+
+    </script>
+    <link href="../css/thickbox.css" rel="stylesheet" type="text/css" />
+    <style type='text/css'>
+        #banner {
+            /*float: left;*/
+            position: relative;
+        }
+
+            #banner .textoBanner {
+                /*position: absolute;*/
+                top: 10px;
+                left: 5px;
+                text-align: justify;
+                margin: 15px;
+            }
+
+        .margin15 {
+            margin-bottom: 15px;
+        }
+    </style>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $("#sem_login").hide();
+            $("#topo_menu").css("margin-top", "60px");
+            $("#topo_titulo").css("height", "20px");
+            $("#titulo_pagina").css("width", "670px");
+            $("#titulo_pagina").css("padding-top", "20px");
+        });
+    </script>
+</head>
+<body class="body">
+    <div id="topo_titulo" style="height: 70px; vertical-align: middle; float: left">
+        <div style="float: left; padding-top: 10px;">
+            <img src="../img/agendar.png" width="80px" alt="Agendamento" /></div>
+        <div id="titulo_pagina" style="float: left; padding-left: 5px; width: 420px;">
+            <br />
+            <h1>
+                Agendamento Eletrônico de Atendimento</h1>
+        </div>
+    </div>
+    <form method="post" action="./BemVindo.aspx" id="form1">
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwUKMTM5MTgyMTY1MA9kFgJmD2QWAgIBD2QWBgIMDxYCHgRUZXh0BaUBPGxpbmsgaHJlZj0nLi4vY3NzL1RQLmNzcycgcmVsPSdzdHlsZXNoZWV0JyB0eXBlPSd0ZXh0L2NzcycgbWVkaWE9J3NjcmVlbicgLz48bGluayBocmVmPScuLi9jc3MvanF1ZXJ5LmFsZXJ0cy5jc3MnIHJlbD0nc3R5bGVzaGVldCcgdHlwZT0ndGV4dC9jc3MnIG1lZGlhPSdzY3JlZW4nIC8+ZAINDxYCHwAFdDxzY3JpcHQgbGFuZ3VhZ2U9J0phdmFTY3JpcHQnIHNyYz0nLy9taXNjLnByZWZlaXR1cmEuc3AuZ292LmJyL2pzL2NvbmZpZ3VyYXRpb24uanMnIHR5cGU9J3RleHQvamF2YXNjcmlwdCc+PC9zY3JpcHQ+ZAIYDxYCHwAFcDxzY3JpcHQgbGFuZ3VhZ2U9J0phdmFTY3JpcHQnIHNyYz0nLy9taXNjLnByZWZlaXR1cmEuc3AuZ292LmJyL2pzL3N0cnVjdHVyZS5qcycgdHlwZT0ndGV4dC9qYXZhc2NyaXB0Jz48L3NjcmlwdD5kZBCUXTo0Pxtec88c5RVqgos9B5OLHuViGSV5Nb9UOwG/" />
+
+<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="CF1E6364" />
+<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="/wEdAAPOQDvgpGP1eCyVSX6pORVUNKsetoEeRvDEQ2bIt1m6Fns8qC8WF39QKuHo+9XuoIBAyk0uOnTxzQ7S7l2iikXSCehgl/lSTFIHpbr2jyw3dA==" />
+    <div id="sem_login" style="float: right; margin-right: 0px;">
+    </div>
+    <br />
+    <div id="int_menu" class="celula">
+        <div id="topo_menu" style="margin-top: 10px;text-align:left;margin-left:60px;">
+            <ul>
+                <li id="testeli"><a href="../forms/BemVindo.aspx">Página Inicial</a></li>
+                <li id="liMenuAgendarAtendimento"><a href="../forms/AgendarP1.aspx">Agendar Atendimento</a></li>
+                <li id="liMenuConsultarAgendametno"><a href="../forms/ConsAgendaP1.aspx">Consultar Agendamento</a></li>
+                <!--<li id="liMenuLegislacao"><a id="lnkLegislacao" href="javascript:__doPostBack(&#39;ctl00$lnkLegislacao&#39;,&#39;&#39;)">Legislação</a></li>
+                <li id="liMenuFAQ" class="ultimo_item"><a id="lnkFAQ" href="javascript:__doPostBack(&#39;ctl00$lnkFAQ&#39;,&#39;&#39;)">Perguntas e Respostas</a></li>-->
+            </ul>
+        </div>
+    </div>
+    <div style="margin: 0px 5px 0px 5px;">
+   
+        
+    <div id="banner" align="center" style="margin-left: 50px; width: 670px; text-align: justify; min-height: 400px;">
+        <div style="width: 670px; height: 42px; background-image: url('../img/banner1.png'); padding: 22px 0 0 0;">
+            
+            <h3 align="center">INFORMAÇÕES</h3>
+        </div>
+        <div class="textoBanner" align="center" style="width: 625px;">
+
+           
+            <h3 align="center">Agendamento de horário para Atendimento da<br />
+                Secretaria Municipal de Assistência e Desenvolvimento Social
+            </h3>
+            <p class="TXTTextoComum">
+             
+                <br />
+                <br />
+                Para realizar um agendamento, acesse o menu, opção <a style="color: #0000FF;" href="Agendarp1.aspx">Agendar Atendimento</a>.<br />
+            </p>
+            <br />
+            <p class="TXTTextoComum margin15">
+                Para emitir 2ª via de protocolo, reagendar ou cancelar um agendamento, acesse o menu, opção <a style="color: #0000FF;" href="ConsAgendaP1.aspx">Consultar Agendamento</a>.
+            </p>
+            <br />
+          
+            <div id="ContentPlaceHolder1_divLembre" class="margin15">
+                <h3 align="left">Lembre-se</h3>
+                Atualmente, existem 17 serviços associados ao Cadastro Único.<br />Não há necessidade de agendar o atendimento para mais de um serviço da lista. Realizando a inclusão ou atualização para qualquer um dos serviços, você já estará apto aos demais (se estiver dentro dos critérios).
+            </div>
+            <div id="ContentPlaceHolder1_divImportante" class="margin15">
+                <h3 align="left">Importante</h3>
+                Caso não seja possível o comparecimento no dia e hora marcados, deve-se acessar a aba <b>Consultar Agendamento</b> e cancelar ou alterar o dia e horário para novo atendimento.</b>Este procedimento deve ser feito com o mínimo de TRÊS DIAS de antecedência para ter validade.
+            </div>
+
+            <div style="display: none;">
+                <h3 align="left">Atenção:</h3>
+                <div>
+                </div>
+                <br />
+                <h3 align="left">LEMBRE-SE</h3>
+                <div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <br />
+        <!-- Janela modal aguarde processando -->
+        <div id="janelaModal" class="window">
+            <img src="../img/ajax-loader.gif" alt="Aguarde" />
+        </div>
+    </div>
+    <div style=" margin: 0px 5px 0px 5px; display:none;" align="right" >
+        
+    </div>
+    <div id="rodape">
+	
+        <script type="text/javascript" language="JavaScript">
+        
+            PortalStructure.printFooter(); // Insere o Footer na pagina
+        
+        </script>
+    
+</div>
+    
+
+    <div id="mask">
+    </div>
+    </form>
+</body>
+</html>
